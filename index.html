@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Calculadora de nivel de ocupación</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2rem 1rem 4rem;
+      background: #f5f5f5;
+    }
+    h1 {
+      font-size: 1.8rem;
+      margin-bottom: 0.5rem;
+    }
+    h2 {
+      margin-top: 2rem;
+      border-top: 1px solid #ddd;
+      padding-top: 1rem;
+    }
+    .card {
+      background: #fff;
+      padding: 1.5rem;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+      margin-top: 1rem;
+    }
+    label {
+      display: block;
+      font-weight: 600;
+      margin-top: 1rem;
+      margin-bottom: 0.25rem;
+    }
+    select, input {
+      width: 100%;
+      padding: 0.5rem;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 0.95rem;
+      box-sizing: border-box;
+    }
+    .help {
+      font-size: 0.85rem;
+      color: #555;
+      margin-top: 0.15rem;
+    }
+    button {
+      margin-top: 1.5rem;
+      padding: 0.7rem 1.5rem;
+      border-radius: 999px;
+      border: none;
+      font-size: 1rem;
+      cursor: pointer;
+      background: #0072ce;
+      color: white;
+    }
+    button:hover {
+      opacity: 0.9;
+    }
+    .results {
+      margin-top: 1.5rem;
+      padding: 1rem;
+      border-radius: 8px;
+      background: #f0f4ff;
+      font-size: 0.98rem;
+    }
+    .results p {
+      margin: 0.25rem 0;
+    }
+    .highlight {
+      font-weight: 700;
+      font-size: 1.05rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Calculadora de nivel de ocupación</h1>
+  <p class="help">
+    Herramienta orientativa para estimar la capacidad máxima de un espacio deportivo y el porcentaje medio de ocupación por sesión.
+  </p>
+
+  <div class="card">
+    <h2>Datos del espacio</h2>
+
+    <!-- Subtipo -->
+    <label for="subtype">Espacio deportivo (subtipo)</label>
+    <select id="subtype">
+      <option value="">— Selecciona un espacio —</option>
+      <option value="pavello">Pabellón</option>
+      <option value="poliesportiva">Pista polideportiva</option>
+      <option value="tennis">Tenis</option>
+      <option value="padel">Pádel</option>
+      <option value="squash">Squash</option>
+      <option value="fronto">Frontón</option>
+      <option value="patinatge">Patinaje</option>
+      <option value="futbolSala">Fútbol sala</option>
+      <option value="voleiPlatja">Vóley playa</option>
+      <option value="basket">Pista de baloncesto</option>
+      <option value="futbol11">Fútbol 11</option>
+      <option value="futbol7">Fútbol 7</option>
+      <option value="rugbi">Rugby</option>
+      <option value="hoqueiHerba">Hockey hierba</option>
+      <option value="pistaAtletisme">Pista de atletismo</option>
+      <option value="rectaAtletisme">Recta de atletismo</option>
+      <option value="piscinaPolivalent">Piscina polivalente</option>
+      <option value="piscinaEnsenyament">Piscina de enseñanza / chapoteo</option>
+      <option value="salaDirigides">Sala de actividades dirigidas</option>
+      <option value="salaMusculacio">Sala de musculación / fitness</option>
+      <option value="minibasquet">Minibásquet</option>
+      <option value="piscinaSalts">Piscina de saltos</option>
+    </select>
+    <p class="help">
+      Selecciona el tipo de espacio que deseas analizar. Cada subtipo tiene un factor de m² por deportista asociado.
+    </p>
+
+    <!-- m2 -->
+    <label for="usableArea">m² utilizables del espacio</label>
+    <input type="number" id="usableArea" min="0" step="0.1" placeholder="Ejemplo: 400">
+    <p class="help">
+      Introduce la superficie real utilizable del espacio o de la parte del espacio que quieras analizar.
+    </p>
+
+    <!-- Personas por sesión -->
+    <label for="avgPeople">Media de personas que utilizan el espacio por sesión</label>
+    <input type="number" id="avgPeople" min="0" step="1" placeholder="Ejemplo: 18">
+    <p class="help">
+      Número medio de personas que utilizan el espacio habitualmente en cada sesión.
+    </p>
+
+    <button id="calcBtn">Calcular ocupación</button>
+
+    <div class="results" id="results" style="display:none;">
+      <p class="highlight" id="maxCapacity"></p>
+      <p class="highlight" id="occupancyPercent"></p>
+      <p id="detailText"></p>
+    </div>
+  </div>
+
+  <script>
+    // FACTORES POR SUBTIPO (m² por deportista)
+    const subtypeFactors = {
+      pavello: 20,
+      poliesportiva: 20,
+      tennis: 40,
+      padel: 50,
+      squash: 25,
+      fronto: 40,
+      patinatge: 25,
+      futbolSala: 30,
+      voleiPlatja: 35,
+      basket: 32,
+      futbol11: 60,
+      futbol7: 45,
+      rugbi: 70,
+      hoqueiHerba: 60,
+      pistaAtletisme: 30,
+      rectaAtletisme: 25,
+      piscinaPolivalent: 25,
+      piscinaEnsenyament: 20,
+      salaDirigides: 10,
+      salaMusculacio: 8,
+      minibasquet: 28,
+      piscinaSalts: 30
+    };
+
+    function formatNumber(num, decimals = 1) {
+      return num.toLocaleString('es-ES', {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+      });
+    }
+
+    document.getElementById('calcBtn').addEventListener('click', () => {
+      const subtype = document.getElementById('subtype').value;
+      const usableArea = parseFloat(document.getElementById('usableArea').value);
+      const avgPeople = parseFloat(document.getElementById('avgPeople').value);
+      const resultsDiv = document.getElementById('results');
+
+      // Validaciones básicas
+      if (!subtype) {
+        alert('Por favor, selecciona un espacio deportivo.');
+        return;
+      }
+      if (isNaN(usableArea) || usableArea <= 0) {
+        alert('Introduce una superficie útil válida (m²).');
+        return;
+      }
+      if (isNaN(avgPeople) || avgPeople < 0) {
+        alert('Introduce una media de personas por sesión válida.');
+        return;
+      }
+
+      const factor = subtypeFactors[subtype];
+
+      // Cálculos
+      const maxCapacity = usableArea / factor;
+      const occupancyPercent = maxCapacity > 0 ? (avgPeople / maxCapacity) * 100 : 0;
+
+      // Resultados
+      document.getElementById('maxCapacity').textContent =
+        'Capacidad máxima estimada del espacio: ' + formatNumber(maxCapacity) + ' deportistas';
+
+      document.getElementById('occupancyPercent').textContent =
+        'Porcentaje medio de ocupación por sesión: ' + formatNumber(occupancyPercent) + ' %';
+
+      document.getElementById('detailText').textContent =
+        'Con una media de ' + formatNumber(avgPeople, 0) +
+        ' personas por sesión, el espacio se utiliza aproximadamente al ' +
+        formatNumber(occupancyPercent, 1) +
+        '% de su capacidad máxima estimada.';
+
+      resultsDiv.style.display = 'block';
+    });
+  </script>
+</body>
+</html>
